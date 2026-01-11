@@ -40,6 +40,13 @@ public class UwbCefApp : CefApp
         if (remoteDebugging && remoteDebuggingOrigins != null && !commandLine.HasSwitch("--remote-allow-origins"))
             commandLine.AppendSwitch("--remote-allow-origins", string.Join(',', remoteDebuggingOrigins));
 
+#if WINDOWS
+        // Disable DirectComposition to fix crashes on Windows 10 systems
+        // where IDCompositionDevice4 is not available (error 0x80004002)
+        if (!commandLine.HasSwitch("--disable-direct-composition"))
+            commandLine.AppendSwitch("--disable-direct-composition");
+#endif
+
 #if LINUX || MACOS
         if (!commandLine.HasSwitch("--no-zygote")) commandLine.AppendSwitch("--no-zygote");
 #endif
