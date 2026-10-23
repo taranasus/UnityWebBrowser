@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Newtonsoft.Json;
 using UnityEngine.Scripting;
 using VoltstroStudios.UnityWebBrowser.Core;
@@ -26,6 +27,13 @@ namespace VoltstroStudios.UnityWebBrowser.Logging
             logger = client.logger;
             ignoreLogProcessJsonErrors = client.ignoreLogProcessJsonErrors;
         }
+
+        /// <summary>
+        ///     Set once the client has started shutting the engine down. From then on errors the engine reports while
+        ///     it exits (on Linux its listener is usually interrupted with 'Interrupted system call') are expected,
+        ///     so they are logged as plain messages instead of errors.
+        /// </summary>
+        internal volatile bool ShutdownStarted;
 
         public event Action<string> OnProcessOutputLog;
 
@@ -52,10 +60,18 @@ namespace VoltstroStudios.UnityWebBrowser.Logging
                     logger.Debug($"[{logStructure.Category}]: {logStructure.Message}");
                 else if (logStructure.Level == LogSeverity.Warn)
                     logger.Warn($"[{logStructure.Category}]: {logStructure.Message}");
-                else if (logStructure.Level == LogSeverity.Error)
-                    logger.Error($"[{logStructure.Category}]: {logStructure.Message}\n{logStructure.Exception}");
-                else if (logStructure.Level == LogSeverity.Fatal)
-                    logger.Error($"[{logStructure.Category}]: {logStructure.Message}\n{logStructure.Exception}");
+                else if (logStructure.Level is LogSeverity.Error or LogSeverity.Fatal)
+                {
+                    if (ShutdownStarted)
+                        logger.Debug($"[{logStructure.Category}] (while shutting down): {logStructure.Message}\n{logStructure.Exception}");
+                    else
+                        logger.Error($"[{logStructure.Category}]: {logStructure.Message}\n{logStructure.Exception}");
+                }
+            }
+            catch (ThreadAbortException)
+            {
+                //Mono aborts this reader thread when the game quits, sometimes halfway through a message. Not an error.
+                return;
             }
             catch (JsonException)
             {

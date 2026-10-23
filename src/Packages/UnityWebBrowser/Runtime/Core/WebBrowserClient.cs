@@ -1180,6 +1180,10 @@ namespace VoltstroStudios.UnityWebBrowser.Core
             HasDisposed = true;
             logger.Debug("UWB shutdown...");
 
+            //From here on errors the engine reports while it exits are expected
+            if (processLogHandler != null)
+                processLogHandler.ShutdownStarted = true;
+
             cancellationSource?.Cancel();
 
             //Destroy textures
