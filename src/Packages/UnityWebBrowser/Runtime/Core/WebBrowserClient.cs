@@ -1214,10 +1214,26 @@ namespace VoltstroStudios.UnityWebBrowser.Core
             //Kill the process if we haven't already
             if (engineProcess != null)
             {
-                if (!engineProcess.HasExited)
-                    engineProcess.KillProcess();
-                    
-                engineProcess.Dispose();
+                //A failure here must not skip the rest of the clean-up below
+                try
+                {
+                    if (!engineProcess.HasExited)
+                        engineProcess.KillProcess();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Some error occured while killing the engine process! {ex}");
+                }
+
+                try
+                {
+                    engineProcess.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Some error occured while disposing the engine process! {ex}");
+                }
+
                 engineProcess = null;
             }
             

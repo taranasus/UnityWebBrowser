@@ -51,6 +51,13 @@ public class UwbCefApp : CefApp
         if (!commandLine.HasSwitch("--no-zygote")) commandLine.AppendSwitch("--no-zygote");
 #endif
 
+#if LINUX
+        // Keep Chromium away from the desktop keyring (KWallet / Secret Service). A keyring that never answers
+        // blocks start-up for ~50s (two 25s D-Bus timeouts). The Unity side (LinuxProcess) also passes this on the
+        // command line, so engines built before this change get it too.
+        if (!commandLine.HasSwitch("--password-store")) commandLine.AppendSwitch("--password-store", "basic");
+#endif
+
 #if MACOS
         if (!commandLine.HasSwitch("--use-mock-keychain")) commandLine.AppendSwitch("--use-mock-keychain");
 #endif
